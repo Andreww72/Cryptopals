@@ -72,3 +72,10 @@ def repeating_key_xor(plaintext: bytes, key: bytes) -> bytes:
     for i, byte in enumerate(plaintext):
         xor.append(byte ^ key[i % key_len])
     return bytes(xor)
+
+def hamming_distance(a: bytes, b: bytes) -> int:
+    count = 0
+    for x, y in zip(a, b):
+        diff = x ^ y
+        count += sum([1 for bit in bin(diff) if bit == '1'])
+    return count
