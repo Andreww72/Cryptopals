@@ -1,6 +1,7 @@
 import math
 import crypt
 import random
+import secrets
 from typing import Union
 from base64 import b64decode
 
@@ -231,6 +232,97 @@ def challenge_13() -> None:
     print(f"ch13={decrypted_profile}")
 
 
+def challenge_14() -> None:
+    """Byte-at-a-time ECB decryption (Harder)
+    https://cryptopals.com/sets/2/challenges/14"""
+
+    # Take oracle from challenge 12 and repeat but with random prefix
+    class ECB_Oracle_Harder:
+        def __init__(self):
+            self.key = crypt.rand_key()
+            self.prefix = secrets.token_bytes(random.randint(0, 255))
+            print(f"{len(self.prefix)=}")
+
+        def encrypt(self, append_known: bytes, ciphertext: bytes):
+            return crypt.aes_ecb_encrypt(
+                self.prefix + append_known + ciphertext, self.key
+            )
+
+    data = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK"
+    unknown = b64decode(data)
+    ecb_oracle = ECB_Oracle_Harder()
+    blocksize = AES_BS_B
+
+    # Attack length of prefix for use in following byte by byte attack
+    # Reduce prefix_solver by one until three identical CT A blocks
+    # becomes two, then calculate # As in the last prefix block and
+    # thus know length of the prefix.
+    counter = 0
+    while True:
+        num_As = blocksize * 4 - counter
+        prefix_solver = bytearray(b"A" * num_As)
+        oracle_result = ecb_oracle.encrypt(prefix_solver, unknown)
+        block_count = len(oracle_result) // blocksize
+
+        blocks: list[bytes] = []
+        for i in range(block_count):
+            blocks.append(oracle_result[blocksize * i : blocksize * (i + 1)])
+
+        if len(blocks) - len(set(blocks)) == 1:
+            # Find index of duplicate input CTs
+            for i in range(block_count):
+                if (
+                    oracle_result[blocksize * i : blocksize * (i + 1)]
+                    == oracle_result[blocksize * (i + 1) : blocksize * (i + 2)]
+                ):
+                    blocks_before_crafted = i
+
+            # Calculate prefix length
+            prefix_len = blocks_before_crafted * blocksize - (
+                num_As - (blocksize * 3 - 1)
+            )
+            print(f"{prefix_len=}")
+            break
+        counter += 1
+
+    # Attack ciphertext with one byte short version and match
+    plaintext = bytearray()
+    counter = 1
+    prefix_pad_len = blocksize - prefix_len % blocksize  # blocksize-remainder
+    prefix_total = prefix_len + prefix_pad_len
+
+    while counter < len(unknown):
+        # Form dictionary of possible output blocks
+        dict_options: dict[bytes, bytearray] = {}
+        block_num = math.floor(counter / blocksize)
+
+        # Versions with and without prefix padded for both input and storing
+        dict_crafted = bytearray(
+            b"P" * prefix_pad_len
+            + b"A" * (blocksize * (block_num + 1) - counter)
+            + plaintext
+        )
+        input_crafted = bytearray(
+            b"P" * prefix_pad_len + b"A" * (blocksize * (block_num + 1) - counter)
+        )
+
+        for letter in range(0, 255):
+            dict_crafted_input = dict_crafted + bytes([letter])
+            oracle_result = ecb_oracle.encrypt(dict_crafted_input, unknown)
+            dict_options[
+                oracle_result[: prefix_total + blocksize * (block_num + 1)]
+            ] = dict_crafted_input
+
+        oracle_result = ecb_oracle.encrypt(input_crafted, unknown)
+        check_blocks = oracle_result[: prefix_total + blocksize * (block_num + 1)]
+        matched_block = dict_options[check_blocks]
+        plaintext.append(matched_block[-1])
+        counter += 1
+
+    ch14 = plaintext
+    print(f"{ch14=}")
+
+
 if __name__ == "__main__":
     print("CHALLENGE 9")
     challenge_9()
@@ -242,3 +334,5 @@ if __name__ == "__main__":
     challenge_12()
     print("\nCHALLENGE 13")
     challenge_13()
+    print("\nCHALLENGE 14")
+    challenge_14()
