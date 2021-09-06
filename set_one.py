@@ -79,6 +79,16 @@ def challenge_4() -> None:
     print(f"{ch4=}: {round(scores[ch4], 2)}, {str(msgs[ch4], 'utf-8').strip()}")
 
 
+def challenge_5() -> None:
+    """Implement repeating-key XOR
+    https://cryptopals.com/sets/1/challenges/5"""
+
+    msg = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal"
+    key = b"ICE"
+    ch5 = crypt.repeating_key_xor(bytes(msg, "utf-8"), key).hex()
+    print(f"{ch5=}")
+
+
 if __name__ == "__main__":
     print("CHALLENGE 1")
     challenge_1()
@@ -88,3 +98,5 @@ if __name__ == "__main__":
     challenge_3()
     print("\nCHALLENGE 4")
     challenge_4()
+    print("\nCHALLENGE 5")
+    challenge_5()
