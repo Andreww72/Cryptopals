@@ -363,6 +363,60 @@ def challenge_15() -> None:
         print("Correctly caught padding validation failure")
 
 
+def challenge_16() -> None:
+    """CBC bitflipping attacks
+    https://cryptopals.com/sets/2/challenges/16"""
+
+    class CBCBitflipperOracle:
+        def __init__(self):
+            self.key = crypt.rand_key()
+            self.iv = crypt.rand_key()
+
+        def cbc_surround_encrypt(self, plaintext: str) -> bytes:
+            prepend = "comment1=cooking%20MCs;userdata="
+            append = ";comment2=%20like%20a%20pound%20of%20bacon"
+            plaintext.replace(";", "")
+            plaintext.replace("=", "")
+            full_str = bytes(prepend + plaintext + append, "utf-8")
+            return crypt.aes_cbc_encrypt(full_str, self.key, self.iv)
+
+        def cbc_surround_decrypt(self, ciphertext: bytes) -> bool:
+            decrypted = crypt.aes_cbc_decrypt(ciphertext, self.key, self.iv)
+            print(decrypted)
+            return b";admin=true" in decrypted
+
+    oracle = CBCBitflipperOracle()
+
+    # Find length of prepend and append:
+    # Input text to pad prepend to blocksize and add another extra input
+    # text to create two blocks of user data. The first is edited to
+    # bitflip attack the second. Remaining append can be garbage.
+    prepend_len = len("comment1=cooking%20MCs;userdata=")
+    append_len = len(";comment2=%20like%20a%20pound%20of%20bacon")
+    append_pad = AES_BS_B - append_len % AES_BS_B
+    # Prepend is already a blocklength multiple so no pad
+
+    crafted_input = "A" * (append_pad + AES_BS_B * 2)
+    print(f"{len(crafted_input)}: {crafted_input}")
+    ciphertext = bytearray(oracle.cbc_surround_encrypt(crafted_input))
+
+    # CBC bitflip attack user data area to change the prepend
+    # Target output includes ;admin=true; (12 len)
+    # Edit third block to produce target output in fourth block
+    target = b";admin=true;"
+    replacement_block = bytearray()
+    for i, target_byte in enumerate(target):
+        edit_byte = ciphertext[2 * AES_BS_B + i]
+        affect_byte = 65  # 'A' which was input
+        mask = crypt.fixed_xor(bytes([affect_byte]), bytes([target_byte]))
+        replace_byte = crypt.fixed_xor(bytes([edit_byte]), mask)
+        replacement_block.append(int(replace_byte[0]))
+    print(replacement_block)
+
+    ciphertext[2 * AES_BS_B : 2 * AES_BS_B + len(target)] = replacement_block
+    print(oracle.cbc_surround_decrypt(ciphertext))
+
+
 if __name__ == "__main__":
     print("CHALLENGE 9")
     challenge_9()
@@ -378,3 +432,5 @@ if __name__ == "__main__":
     challenge_14()
     print("\nCHALLENGE 15")
     challenge_15()
+    print("\nCHALLENGE 16")
+    challenge_16()
