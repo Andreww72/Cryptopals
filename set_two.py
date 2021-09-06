@@ -1,6 +1,7 @@
 import math
 import crypt
 import random
+from typing import Union
 from base64 import b64decode
 
 AES_BS_B = crypt.AES_BS_B
@@ -139,7 +140,7 @@ def challenge_12() -> None:
     counter = 1
     while counter < len(unknown):
         # Form dictionary of possible output blocks
-        dict_options = {}
+        dict_options: dict[bytes, bytearray] = {}
         block_num = math.floor(counter / blocksize)
 
         dict_crafted = bytearray(
@@ -163,6 +164,73 @@ def challenge_12() -> None:
     print(f"{ch12=}")
 
 
+def challenge_13() -> None:
+    """ECB cut-and-paste
+    https://cryptopals.com/sets/2/challenges/13"""
+
+    def encoded_profile_parse(profile: str) -> dict[str, str]:
+        separated = profile.split("&")
+        dict_output = {}
+        for item in separated:
+            item_parts = item.split("=")
+            dict_output[item_parts[0]] = item_parts[1]
+        return dict_output
+
+    def profile_create(email: str, uid: int) -> dict[str, Union[str, int]]:
+        uid += 1
+        email = email.replace("&", "")
+        email = email.replace("=", "")
+        return {"email": email, "uid": uid, "role": "user"}
+
+    def profile_encode(profile: dict[str, Union[str, int]]) -> str:
+        encoded = ""
+        for i, v in profile.items():
+            encoded = encoded + f"{i}={v}&"
+        return encoded[:-1]
+
+    # Oracle functions
+    class CutPasteOracle:
+        def __init__(self):
+            self.key = crypt.rand_key()
+
+        def encrypt(self, encoded_profile: str) -> bytes:
+            return crypt.aes_ecb_encrypt(bytes(encoded_profile, "utf-8"), self.key)
+
+        def decrypt(self, encrypted_profile: bytes) -> dict[str, str]:
+            decrypted = crypt.aes_ecb_decrypt(encrypted_profile, self.key)
+            print(decrypted)
+            return encoded_profile_parse(str(decrypted))
+
+    # Attacker has access to the oracle functions but not the key.
+    # Figure out input that puts the text "user" in last block alone:
+    # Cannot put "role=user" in last block as cannot crafted input that
+    # contains and equals sign.
+    # Input email bob@cattle.far causes 32 bytes before "user". This is
+    # exactly two blocks, thus final block is "user" is 4 bytes with 12
+    # bytes of padding.
+    uid = 0
+    cut_paste_oracle = CutPasteOracle()
+    profile = profile_create("bob@cattle.far", uid)
+    encoded_profile = profile_encode(profile)
+    encrypted_profile = cut_paste_oracle.encrypt(encoded_profile)
+
+    # Generate ciphertexts of a block containing "admin" and padding:
+    # "email="" is 6 bytes, thus we need 10 bytes of irrelevant padding
+    # then "admin" and 11 bytes of proper pkcs7 padding.
+    crafted_input = "A" * 10 + "admin" + "\x0b" * 11
+    crafted_profile = profile_create(crafted_input, uid)
+    crafted_encoded = profile_encode(crafted_profile)
+    crafted_cipher = cut_paste_oracle.encrypt(crafted_encoded)
+    sub_block = crafted_cipher[AES_BS_B : AES_BS_B * 2]
+
+    # Replace final block of encrypted_profile with the crafted sub_block.
+    encrypted_profile = encrypted_profile[:-AES_BS_B] + sub_block
+
+    # Decrypt to view admin has been set
+    decrypted_profile = cut_paste_oracle.decrypt(encrypted_profile)
+    print(f"ch13={decrypted_profile}")
+
+
 if __name__ == "__main__":
     print("CHALLENGE 9")
     challenge_9()
@@ -172,3 +240,5 @@ if __name__ == "__main__":
     challenge_11()
     print("\nCHALLENGE 12")
     challenge_12()
+    print("\nCHALLENGE 13")
+    challenge_13()
