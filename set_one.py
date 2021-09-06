@@ -46,6 +46,31 @@ def challenge_3() -> None:
     print(f"{ch3=}: {round(scores[ch3], 2)}, {msgs[ch3]}")
 
 
+def challenge_4() -> None:
+    """Detect single-character XOR
+    https://cryptopals.com/sets/1/challenges/4"""
+
+    scores = {}
+    msgs = {}
+
+    with open("data/set1_ch4_data.txt", "r") as file_ch4:
+        for i, line in enumerate(file_ch4):
+            line = line.strip("\n")
+
+            for letter in LETTERS:
+                bytes_msg = bytes.fromhex(line)
+                try:
+                    res, score = crypt.single_xor_cipher(bytes_msg, letter)
+                except UnicodeDecodeError:
+                    continue
+
+                msgs[f"{i}_{letter}"] = res
+                scores[f"{i}_{letter}"] = score
+
+    ch4 = max(scores, key=scores.get)
+    print(f"{ch4=}: {round(scores[ch4], 2)}, {msgs[ch4].strip()}")
+
+
 if __name__ == "__main__":
     print("CHALLENGE 1")
     challenge_1()
@@ -53,3 +78,5 @@ if __name__ == "__main__":
     challenge_2()
     print("\nCHALLENGE 3")
     challenge_3()
+    print("\nCHALLENGE 4")
+    challenge_4()
