@@ -1,3 +1,4 @@
+import math
 import crypt
 import random
 from base64 import b64decode
@@ -100,6 +101,68 @@ def challenge_11() -> None:
         print("Detected: " + encryption_oracle(b"A" * 16 * 4))
 
 
+def challenge_12() -> None:
+    """Byte-at-a-time ECB decryption (simple)
+    https://cryptopals.com/sets/2/challenges/12"""
+
+    class InvalidECBMode(Exception):
+        """Cipher not using ECB"""
+
+    class ECB_Oracle:
+        def __init__(self):
+            self.key = crypt.rand_key()
+
+        def encrypt(self, append_known: bytes, ciphertext: bytes):
+            return crypt.aes_ecb_encrypt(append_known + ciphertext, self.key)
+
+    data = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK"
+    unknown = b64decode(data)
+    ecb_oracle = ECB_Oracle()
+
+    # Discover the block size of the cipher (use your-string only)
+    blocksize = len(ecb_oracle.encrypt(b"A", b""))
+    print(f"{blocksize=} bytes")
+
+    # Detect if function is using ECB
+    test_ecb = ecb_oracle.encrypt(b"A" * AES_BS_B * 4, b"")  # 4 AES blocks
+    blocks = [test_ecb[i : i + AES_BS_B] for i in range(0, len(test_ecb), AES_BS_B)]
+    repeater = set()
+    for block in blocks:
+        repeater.add(bytes(block))
+    if len(repeater) == len(blocks):
+        raise InvalidECBMode
+    else:
+        print("ECB found")
+
+    # Attack ciphertext with one byte short version and match
+    plaintext = bytearray()
+    counter = 1
+    while counter < len(unknown):
+        # Form dictionary of possible output blocks
+        dict_options = {}
+        block_num = math.floor(counter / blocksize)
+
+        dict_crafted = bytearray(
+            b"A" * (blocksize * (block_num + 1) - counter) + plaintext
+        )
+        input_crafted = bytearray(b"A" * (blocksize * (block_num + 1) - counter))
+
+        # Try each possible byte till find the match
+        for letter in range(0, 255):
+            crafted_var = dict_crafted + bytes([letter])
+            oracle_result = ecb_oracle.encrypt(crafted_var, unknown)
+            dict_options[oracle_result[: blocksize * (block_num + 1)]] = crafted_var
+
+        oracle_result = ecb_oracle.encrypt(input_crafted, unknown)
+        check_blocks = oracle_result[: (block_num + 1) * blocksize]
+        matched_block = dict_options[check_blocks]
+        plaintext.append(matched_block[-1])
+        counter += 1
+
+    ch12 = plaintext
+    print(f"{ch12=}")
+
+
 if __name__ == "__main__":
     print("CHALLENGE 9")
     challenge_9()
@@ -107,3 +170,5 @@ if __name__ == "__main__":
     challenge_10()
     print("\nCHALLENGE 11")
     challenge_11()
+    print("\nCHALLENGE 12")
+    challenge_12()
