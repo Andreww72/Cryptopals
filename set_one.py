@@ -1,4 +1,4 @@
-from base64 import b64decode, b64encode
+from base64 import b64decode
 import crypt
 
 """
@@ -168,7 +168,7 @@ def challenge_7() -> None:
 
     with open("data/set1_ch7_data.txt", "r") as file_ch7:
         bytes_data_ch7 = b64decode(file_ch7.read().strip("\n"))
-        ch7 = crypt.aes_decrypt(bytes_data_ch7, b"YELLOW SUBMARINE").decode()
+        ch7 = crypt.aes_ecb_decrypt(bytes_data_ch7, b"YELLOW SUBMARINE").decode()
         print(f"{ch7=}")
 
 

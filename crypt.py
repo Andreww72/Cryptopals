@@ -7,6 +7,14 @@ AES_BS_b = 128
 AES_BS_B = AES_BS_b // 8
 
 
+class PaddingLengthError(Exception):
+    """Input data was not correctly padded to the block size"""
+
+
+class PaddingValueError(Exception):
+    """Input data was not correctly padded to the block size"""
+
+
 def hex_to_base64(msg: str) -> str:
     return b64encode(bytes.fromhex(msg)).decode("utf-8")
 
@@ -98,3 +106,38 @@ def aes_decrypt(ciphertext: bytes, key: bytes) -> bytes:
     decryptor = cipher.decryptor()
     plaintext = decryptor.update(ciphertext) + decryptor.finalize()
     return plaintext
+
+
+def pkcs7_pad(msg: bytes, blocksize=AES_BS_B) -> bytes:
+    padding_len = blocksize - len(msg) % blocksize
+    padding = bytes([padding_len]) * padding_len
+    return msg + padding
+
+
+def pkcs7_unpad(msg: bytes, blocksize=AES_BS_B) -> bytes:
+    if not len(msg) % blocksize == 0:
+        raise PaddingLengthError
+    
+    last_value = msg[-1]
+    last_value_int = int(last_value)
+    check_count = 0
+    for char in reversed(msg):
+        if char == last_value:
+            check_count += 1
+        else:
+            break
+    
+    if not check_count == last_value_int:
+        raise PaddingValueError
+
+    return msg[:-last_value_int]
+
+
+def aes_ecb_encrypt(plaintext: bytes, key: bytes) -> bytes:
+    plaintext = pkcs7_pad(plaintext, AES_BS_B)
+    return aes_encrypt(plaintext, key)
+
+
+def aes_ecb_decrypt(ciphertext: bytes, key: bytes) -> bytes:
+    plaintext = aes_decrypt(ciphertext, key)
+    return pkcs7_unpad(plaintext)
