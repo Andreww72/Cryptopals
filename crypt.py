@@ -3,6 +3,9 @@ from base64 import b64encode, b64decode
 
 """Functions useful across several challenges or sets"""
 
+AES_BS_b = 128
+AES_BS_B = AES_BS_b // 8
+
 
 def hex_to_base64(msg: str) -> str:
     return b64encode(bytes.fromhex(msg)).decode("utf-8")

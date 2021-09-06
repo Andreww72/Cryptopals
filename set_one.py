@@ -172,6 +172,31 @@ def challenge_7() -> None:
         print(f"{ch7=}")
 
 
+def challenge_8() -> None:
+    """Detect AES in ECB
+    https://cryptopals.com/sets/1/challenges/8"""
+
+    with open("data/set1_ch8_data.txt", "r") as file_ch8:
+        data_ch8 = file_ch8.readlines()
+
+    ciphertexts = [bytes.fromhex(ciphertext.strip()) for ciphertext in data_ch8]
+    blocksize = crypt.AES_BS_B
+
+    # Find if anything in file has repeated blocks
+    for i, ciphertext in enumerate(ciphertexts):
+        if len(ciphertext) % blocksize != 0:
+            # ECB has blocks of 16
+            continue
+
+        blocks = [
+            ciphertext[i : i + blocksize] for i in range(0, len(ciphertext), blocksize)
+        ]
+
+        if len(set(blocks)) != len(blocks):
+            print(f"ch8={i}")
+            print(ciphertext)
+
+
 if __name__ == "__main__":
     print("CHALLENGE 1")
     challenge_1()
@@ -187,3 +212,5 @@ if __name__ == "__main__":
     challenge_6()
     print("\nCHALLENGE 7")
     challenge_7()
+    print("\nCHALLENGE 8")
+    challenge_8()
