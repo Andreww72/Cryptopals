@@ -16,6 +16,18 @@ def challenge_1() -> None:
     print(f"{ch1=}")
 
 
+def challenge_2() -> None:
+    """Fixed XOR
+    https://cryptopals.com/sets/1/challenges/2"""
+
+    msg_bytes1 = bytes.fromhex("1c0111001f010100061a024b53535009181c")
+    msg_bytes2 = bytes.fromhex("686974207468652062756c6c277320657965")
+    ch2 = crypt.fixed_xor(msg_bytes1, msg_bytes2)
+    print(f"{ch2=}")
+
+
 if __name__ == "__main__":
     print("CHALLENGE 1")
     challenge_1()
+    print("\nCHALLENGE 2")
+    challenge_2()
