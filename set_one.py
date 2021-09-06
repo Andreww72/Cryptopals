@@ -144,8 +144,8 @@ def challenge_6() -> None:
     # Solve each block as a single char xor
     key: list[int] = []
     for bytes_block in blocks_t:
-        scores = {}
-        msgs = {}
+        scores: dict[int, float] = {}
+        msgs: dict[int, str] = {}
         for letter in LETTERS:
             bytes_obj = b"".join(bytes_block)
             res, score = crypt.single_xor_cipher(bytes_obj, letter)
@@ -162,6 +162,16 @@ def challenge_6() -> None:
     print("ch6=" + "".join(solved_key))
 
 
+def challenge_7() -> None:
+    """AES in ECB mode
+    https://cryptopals.com/sets/1/challenges/7"""
+
+    with open("data/set1_ch7_data.txt", "r") as file_ch7:
+        bytes_data_ch7 = b64decode(file_ch7.read().strip("\n"))
+        ch7 = crypt.aes_decrypt(bytes_data_ch7, b"YELLOW SUBMARINE").decode()
+        print(f"{ch7=}")
+
+
 if __name__ == "__main__":
     print("CHALLENGE 1")
     challenge_1()
@@ -175,3 +185,5 @@ if __name__ == "__main__":
     challenge_5()
     print("\nCHALLENGE 6")
     challenge_6()
+    print("\nCHALLENGE 7")
+    challenge_7()

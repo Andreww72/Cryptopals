@@ -1,3 +1,4 @@
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from base64 import b64encode, b64decode
 
 """Functions useful across several challenges or sets"""
@@ -73,9 +74,24 @@ def repeating_key_xor(plaintext: bytes, key: bytes) -> bytes:
         xor.append(byte ^ key[i % key_len])
     return bytes(xor)
 
+
 def hamming_distance(a: bytes, b: bytes) -> int:
     count = 0
     for x, y in zip(a, b):
         diff = x ^ y
-        count += sum([1 for bit in bin(diff) if bit == '1'])
+        count += sum([1 for bit in bin(diff) if bit == "1"])
     return count
+
+
+def aes_encrypt(plaintext: bytes, key: bytes) -> bytes:
+    cipher = Cipher(algorithm=algorithms.AES(key), mode=modes.ECB())
+    encryptor = cipher.encryptor()
+    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+    return ciphertext
+
+
+def aes_decrypt(ciphertext: bytes, key: bytes) -> bytes:
+    cipher = Cipher(algorithm=algorithms.AES(key), mode=modes.ECB())
+    decryptor = cipher.decryptor()
+    plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+    return plaintext
