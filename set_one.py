@@ -42,8 +42,12 @@ def challenge_3() -> None:
         res, score = crypt.single_xor_cipher(msg_bytes, letter)
         msgs[letter] = res
         scores[letter] = score
-    ch3 = max(scores, key=scores.get)
-    print(f"{ch3=}: {round(scores[ch3], 2)}, {msgs[ch3]}")
+
+    ordered_scores: dict[int, float] = dict(
+        sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    )
+    ch3 = list(ordered_scores)[0]
+    print(f"{ch3=}: {round(scores[ch3], 2)}, {str(msgs[ch3], 'utf-8')}")
 
 
 def challenge_4() -> None:
@@ -67,8 +71,12 @@ def challenge_4() -> None:
                 msgs[f"{i}_{letter}"] = res
                 scores[f"{i}_{letter}"] = score
 
-    ch4 = max(scores, key=scores.get)
-    print(f"{ch4=}: {round(scores[ch4], 2)}, {msgs[ch4].strip()}")
+    ordered_scores: dict[str, float] = dict(
+        sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    )
+    ch4 = list(ordered_scores)[0]
+
+    print(f"{ch4=}: {round(scores[ch4], 2)}, {str(msgs[ch4], 'utf-8').strip()}")
 
 
 if __name__ == "__main__":
