@@ -95,7 +95,7 @@ def hamming_distance(a: bytes, b: bytes) -> int:
     return count
 
 
-def rand_key(size: int=AES_BS_B) -> bytes:
+def rand_key(size: int = AES_BS_B) -> bytes:
     return os.urandom(size)
 
 
@@ -122,7 +122,7 @@ def pkcs7_pad(msg: bytes, blocksize=AES_BS_B) -> bytes:
 def pkcs7_unpad(msg: bytes, blocksize=AES_BS_B) -> bytes:
     if not len(msg) % blocksize == 0:
         raise PaddingLengthError
-    
+
     last_value = msg[-1]
     last_value_int = int(last_value)
     check_count = 0
@@ -131,7 +131,7 @@ def pkcs7_unpad(msg: bytes, blocksize=AES_BS_B) -> bytes:
             check_count += 1
         else:
             break
-    
+
     if not check_count == last_value_int:
         raise PaddingValueError
 
@@ -151,7 +151,7 @@ def aes_ecb_decrypt(ciphertext: bytes, key: bytes) -> bytes:
 def aes_cbc_encrypt(plaintext: bytes, key: bytes, iv: bytes) -> bytes:
     plaintext = pkcs7_pad(plaintext)
     ciphertext = bytearray()
-    blocks = [plaintext[i:i+AES_BS_B] for i in range(0, len(plaintext), AES_BS_B)]
+    blocks = [plaintext[i : i + AES_BS_B] for i in range(0, len(plaintext), AES_BS_B)]
     prev_block_cipher = None
 
     for block in blocks:
@@ -159,24 +159,24 @@ def aes_cbc_encrypt(plaintext: bytes, key: bytes, iv: bytes) -> bytes:
             cbc_block = fixed_xor(block, prev_block_cipher)
         else:
             cbc_block = fixed_xor(block, iv)
-        
+
         cipher_block = aes_encrypt(cbc_block, key)
         prev_block_cipher = cipher_block
         ciphertext.extend(cipher_block)
-    
+
     return ciphertext
 
 
 def aes_cbc_decrypt(ciphertext: bytes, key: bytes, iv: bytes) -> bytes:
-    blocks = [ciphertext[i:i+AES_BS_B] for i in range(0, len(ciphertext), AES_BS_B)]
+    blocks = [ciphertext[i : i + AES_BS_B] for i in range(0, len(ciphertext), AES_BS_B)]
     plaintext = bytearray()
-    
+
     for i, cipher_block in enumerate(blocks):
         cbc_block = aes_decrypt(cipher_block, key)
         if i == 0:
             plain_block = fixed_xor(cbc_block, iv)
         else:
-            plain_block = fixed_xor(cbc_block, blocks[i-1])
+            plain_block = fixed_xor(cbc_block, blocks[i - 1])
         plaintext.extend(plain_block)
 
     plaintext_unpadded = pkcs7_unpad(plaintext)

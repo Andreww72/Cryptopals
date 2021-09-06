@@ -1,4 +1,5 @@
 import crypt
+import random
 from base64 import b64decode
 
 AES_BS_B = crypt.AES_BS_B
@@ -49,8 +50,60 @@ def challenge_10() -> None:
     print(decrypted)
 
 
+def challenge_11() -> None:
+    """ECB/CBC detection oracle
+    https://cryptopals.com/sets/2/challenges/11"""
+
+    def rand_encrypt(plaintext: bytearray) -> bytes:
+        key = crypt.rand_key()
+        encr_type = random.randint(0, 1)
+
+        # Prepend and postpend 5-10 bytes to plaintext here
+        prepend_len = random.randint(5, 10)
+        postpend_len = random.randint(5, 10)
+
+        for i in range(prepend_len):
+            plaintext = bytearray(plaintext)
+            plaintext.insert(0, random.randint(0, 128))
+        for i in range(postpend_len):
+            plaintext.append(random.randint(0, 128))
+
+        if encr_type:
+            print("Using: ECB")
+            return crypt.aes_ecb_encrypt(plaintext, key)
+        else:
+            print("Using: CBC")
+            iv = crypt.rand_key()
+            return crypt.aes_cbc_encrypt(plaintext, key, iv)
+
+    def encryption_oracle(plaintext: bytes) -> str:
+        # Four blocks because first and last edited by the prepend and postpend
+        # Send rand_encrypt repetitive data
+        ciphertext = rand_encrypt(bytearray(plaintext))
+
+        # Check ciphertext for repetitive output
+        # Repeats means ECB, otherwise CBC
+        blocks = [
+            ciphertext[i : i + AES_BS_B] for i in range(0, len(ciphertext), AES_BS_B)
+        ]
+        repeater = set()
+        for block in blocks:
+            repeater.add(bytes(block))
+
+        if len(repeater) == len(blocks):
+            return "CBC"
+        else:
+            return "ECB"
+
+    # Run test with defined functions
+    for i in range(0, 5):
+        print("Detected: " + encryption_oracle(b"A" * 16 * 4))
+
+
 if __name__ == "__main__":
     print("CHALLENGE 9")
     challenge_9()
     print("\nCHALLENGE 10")
     challenge_10()
+    print("\nCHALLENGE 11")
+    challenge_11()
