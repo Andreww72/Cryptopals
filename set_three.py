@@ -22,7 +22,7 @@ def challenge_17() -> None:
         def __init__(self):
             self.key = crypt.rand_key(AES_BS_B)
 
-        def encrypt(self, plaintext: str):
+        def encrypt(self, plaintext: bytes):
             iv = crypt.rand_key(AES_BS_B)
             return crypt.aes_cbc_encrypt(plaintext, self.key, iv), iv
 
@@ -43,7 +43,7 @@ def challenge_17() -> None:
     # Attacker gets IV (implementing by reuse in decryption)
     print(plaintext)
     ciphertext, iv = padding_oracle.encrypt(plaintext)
-    options = range(0, 255)
+    options = range(0, 255+1)
 
     # C1, C2
     # Change last block of C1 and send (IV, C or F, C2) to oracle
@@ -51,7 +51,7 @@ def challenge_17() -> None:
     # Thus M = D(C2) = C1' XOR 0x01. Else keep changing C1' guess.
     # If target block contains padding bytes, additional attempt required.
 
-    def padded_oracle_decrypt_block(block1: bytes, block2: bytes) -> bytes:
+    def padded_oracle_decrypt_block(block1: bytes, block2: bytes) -> list[bytes]:
         """
         Use padded oracle attack on given blocks
 
@@ -85,11 +85,11 @@ def challenge_17() -> None:
             target_pos = block_size - i - 1
             c = block1[target_pos]
             expected_padding = bytes([i + 1])
- 
+
             # Prepare bytes already found
             for j in range(i):
                 fx = crypt.fixed_xor(expected_padding, intermediaries[j])
-                block1[block_size-j-1] = int.from_bytes(fx, "big")
+                block1[block_size - j - 1] = int.from_bytes(fx, "big")
 
             # Try all 255 possible bytes until successful padding found
             found = False
@@ -111,10 +111,12 @@ def challenge_17() -> None:
                     # Crack byte now a padding success is returned
                     crack_byte(expected_padding, f, c, intermediaries, decrypted_block)
                     break
-            
+
             if not found:
                 # Crack byte in this last block weird case
-                crack_byte(expected_padding, f_is_c_case, c, intermediaries, decrypted_block)
+                crack_byte(
+                    expected_padding, f_is_c_case, c, intermediaries, decrypted_block
+                )
 
         decrypted_block.reverse()
         return decrypted_block
@@ -126,12 +128,11 @@ def challenge_17() -> None:
     for block in range(len(iv_cipher) // AES_BS_B - 1):
         solution.append(
             padded_oracle_decrypt_block(
-                iv_cipher[block*AES_BS_B:(block+1)*AES_BS_B],
-                iv_cipher[(block+1)*AES_BS_B:(block+2)*AES_BS_B]
+                iv_cipher[block * AES_BS_B : (block + 1) * AES_BS_B],
+                iv_cipher[(block + 1) * AES_BS_B : (block + 2) * AES_BS_B],
             )
         )
-        ch17 = ""
-    
+
     ch17 = b""
     for solved_block in solution:
         ch17 = ch17 + b"".join(solved_block)
