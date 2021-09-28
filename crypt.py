@@ -181,3 +181,21 @@ def aes_cbc_decrypt(ciphertext: bytes, key: bytes, iv: bytes) -> bytes:
 
     plaintext_unpadded = pkcs7_unpad(plaintext)
     return plaintext_unpadded
+
+
+def aes_ctr_encrypt(plaintext: bytes, key: bytes, nonce: int) -> bytes:
+    ctr_nonce_size = 8
+    ciphertext = bytearray()
+    blocks = [plaintext[i : i + AES_BS_B] for i in range(0, len(plaintext), AES_BS_B)]
+    
+    for i, block in enumerate(blocks):
+        # Encrypt (nonce|ctr) then XOR against text
+        # 8 byte little endian nonce | 8 byte little endian counter
+        nonce_ctr = nonce.to_bytes(8, "little") + i.to_bytes(8, "little")
+        keystream = aes_encrypt(nonce_ctr, key)
+        ciphertext.extend(fixed_xor(keystream, block))
+    return ciphertext
+
+
+def aes_ctr_decrypt(ciphertext: bytes, key: bytes, nonce: int) -> bytes:
+    return aes_ctr_encrypt(ciphertext, key, nonce)

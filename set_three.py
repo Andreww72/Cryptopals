@@ -140,6 +140,33 @@ def challenge_17() -> None:
     print(f"{ch17=}")
 
 
+def challenge_18() -> None:
+    """Implement CTR
+    https://cryptopals.com/sets/3/challenges/18"""
+
+    # Implement the stream cipher mode in crypt module
+
+    # Test on provided ciphertext
+    data = b"L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ=="
+    ciphertext = b64decode(data)
+    key = b"YELLOW SUBMARINE"
+    nonce = 0
+    ch18 = crypt.aes_ctr_decrypt(ciphertext, key, nonce)
+    print(f"{ch18=}")
+
+    # Test encrypt then decrypt on own random string
+    data = b"I have a sentence to encrypt"
+    key = crypt.rand_key()
+    nonce = 1000
+    encrypted = crypt.aes_ctr_encrypt(data, key, nonce)
+    decrypted = crypt.aes_ctr_decrypt(encrypted, key, nonce)
+    print(f"{data=}")
+    print(f"{encrypted=}")
+    print(f"{decrypted=}")
+
+
 if __name__ == "__main__":
     print("CHALLENGE 17")
     challenge_17()
+    print("\nCHALLENGE 18")
+    challenge_18()
