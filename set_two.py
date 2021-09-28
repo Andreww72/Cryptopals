@@ -1,3 +1,4 @@
+#!/bin/python3
 import math
 import crypt
 import random
@@ -327,40 +328,22 @@ def challenge_15() -> None:
     """PKCS#7 padding validation
     https://cryptopals.com/sets/2/challenges/15"""
 
-    def pkcs7_validate(plaintext: bytes, blocksize: int = AES_BS_B) -> bool:
-        """Validate pkcs#7 padding on a plaintext message"""
-
-        if not len(plaintext) % blocksize == 0:
-            raise crypt.PaddingLengthError
-
-        last_value = plaintext[-1]
-        last_value_int = int(last_value)
-        check_count = 0
-        for char in reversed(plaintext):
-            if char == last_value:
-                check_count += 1
-            else:
-                break
-
-        if not check_count == last_value_int:
-            raise crypt.PaddingValueError
-
-        return True
-
     # Test validation function on valid and invalid padding
-    input1 = b"ICE ICE BABY\x04\x04\x04\x04"
-    input2 = b"ICE ICE BABY\x05\x05\x05\x05"
-    input3 = b"ICE ICE BABY\x01\x02\x03\x04"
+    test1 = b"ICE ICE BABY\x04\x04\x04\x04" # Y
+    test2 = b"ICE ICE BABY\x05\x05\x05\x05" # N
+    test3 = b"ICE ICE BABY\x01\x02\x03\x04" # N
+    test4 = b"ICE ICE BABYZZZ\x01" # Y
+    test5 = b"ICE ICE BABYZZZ\x02" # N
+    test6 = b"ICE ICE BABYZZ\x01\x01" # N
+    test7 = b"ICE ICE BABYZZ\x02\x02" # Y
+    test8 = b"ICE ICE BABYZ\x03\x03\x03" # Y
+    tests = [test1, test2, test3, test4, test5, test6, test7, test8]
 
-    print(pkcs7_validate(input1))
-    try:
-        print(pkcs7_validate(input2))
-    except (crypt.PaddingLengthError, crypt.PaddingValueError):
-        print("Correctly caught padding validation failure")
-    try:
-        print(pkcs7_validate(input3))
-    except (crypt.PaddingLengthError, crypt.PaddingValueError):
-        print("Correctly caught padding validation failure")
+    for test in tests:
+        try:
+            print(crypt.pkcs7_unpad(test))
+        except (crypt.PaddingLengthError, crypt.PaddingValueError):
+            print("Correctly caught padding validation failure")
 
 
 def challenge_16() -> None:
